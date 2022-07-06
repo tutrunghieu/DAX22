@@ -1,0 +1,155 @@
+
+//-------------------------------------------------------------------
+A1_buffering = 
+
+var x = 123
+var y = 234
+return row("sum", x+y, "diff", x-y)
+
+
+//-------------------------------------------------------------------
+A1_buffering_part = 
+
+var part1 = (
+var x = 123
+var y = 234
+return row("sum", x+y, "diff", x-y, "part", "AAA") )
+
+var part2 = (
+var x = 1000
+var y = 2000
+return row("sum", x+y, "diff", x-y, "part", "BBB") )
+
+return union(part1, part2)
+
+
+//-------------------------------------------------------------------
+A1_buffering_inner = 
+
+var x = 1000
+var y = 2000
+
+var part1 = (
+var x = 3
+return row("sum", x+y, "diff", x-y, "part", "AAA") )
+
+var part2 = (
+var y = 4
+return row("sum", x+y, "diff", x-y, "part", "BBB") )
+
+return union(part1, part2)
+
+
+//-------------------------------------------------------------------
+A1_long_short = 
+
+var long_expr = (
+    2*cos(1/2 + 2/3 + 3/4 + 4/5 + 5/6)
+    + 3*sin(1/2 + 2/3 + 3/4 + 4/5 + 5/6)
+    + 4*exp(1/2 + 2/3 + 3/4 + 4/5 + 5/6) )
+
+var short_expr = (
+    var x = 1/2 + 2/3 + 3/4 + 4/5 + 5/6   
+    return 2*cos(x) + 3*sin(x) + 4*exp(x) ) 
+
+return row("long", long_expr, "short", short_expr)
+
+
+
+
+//-------------------------------------------------------------------
+A2_sequencing = 
+
+var t1 = GENERATESERIES(2017, 2021, 1)
+var t2 = GENERATESERIES(1, 12, 1)
+var t3 = CALENDAR(DATEVALUE("2017-05-13"), DATEVALUE("2017-05-27") )
+var s1 = ADDCOLUMNS(t1, "year", [Value], "date", date([Value], 5, 15) )
+var s2 = SELECTCOLUMNS(t1, "year", [Value], "date", date([Value], 5, 15) )
+
+return s2
+
+//-------------------------------------------------------------------
+A2_merging_year_name = 
+
+var t1 = selectcolumns(GENERATESERIES(2018, 2021, 1), "year", [Value])
+
+var c1 = ADDCOLUMNS(t1, "name", "rev")
+var c2 = ADDCOLUMNS(t1, "name", "price")
+var c3 = ADDCOLUMNS(t1, "name", "vol")
+
+return UNION(c1, c2, c3)
+
+
+
+//-------------------------------------------------------------------
+A3_multiplying_year_month = 
+
+var t1 = SELECTCOLUMNS(GENERATESERIES(2018, 2021, 1), "year", [Value])
+var t2 = SELECTCOLUMNS(GENERATESERIES(1, 12, 1), "month", [Value])
+var m1 = GENERATEALL(t1, t2)
+var m2 = ADDCOLUMNS(m1, "ymd", DATE([year], [month], 15) )
+ 
+var m3 = ADDCOLUMNS(m2, "ym", FORMAT([ymd], "yyyy-MM"), "yq", FORMAT([ymd], "yyyy-\qQ") ) 
+return m3
+
+
+
+//-------------------------------------------------------------------
+A4_tagging_totals = 
+
+var t1 = row("name", "Apple", "FY", "FY18", "rev", 2)
+var t2 = row("name", "Apple", "FY", "FY19", "rev", 5)
+var t3 = row("name", "Apple", "FY", "FY20", "rev", 7)
+var t4 = row("name", "Orange", "FY", "FY18", "rev", 3)
+var t5 = row("name", "Orange", "FY", "FY19", "rev", 4)
+var t6 = row("name", "Orange", "FY", "FY20", "rev", 6)
+var u1 = UNION(t1, t2, t3, t4, t5, t6)
+
+var g1 = GROUPBY(u1, [FY], "rev_by_FY", sumx(CURRENTGROUP(), [rev]) )
+var g2 = GENERATEALL(u1, (var y1=[FY] var t1=FILTER(g1, [FY]=y1) 
+var t2 = SELECTCOLUMNS(t1, "rev_FY", [rev_by_FY]) return t2) )
+var g3 = ADDCOLUMNS(g2, "CT", [rev]/[rev_FY])
+return g3
+
+
+//-------------------------------------------------------------------
+A5_switching = 
+
+var g1 = GROUPBY(t2_augmented, [FY_adj])
+
+var g2 = ADDCOLUMNS(g1
+, "FY_next", SWITCH(TRUE(), [FY_adj]="FY18", "FY19", [FY_adj]="FY19", "FY20", [FY_adj]="FY20", "TTM21", "#NA")
+, "FY_last", SWITCH(TRUE(), [FY_adj]="FY19", "FY18", [FY_adj]="FY20", "FY19", [FY_adj]="TTM21", "FY10", "#NA")
+, "type", if([FY_adj]="TTM21", "8m", "12m")
+)
+
+return g2
+
+
+//-------------------------------------------------------------------
+A5_switching_alter = 
+
+var g1 = GROUPBY(t2_augmented, [FY_adj])
+
+var g2 = ADDCOLUMNS(g1
+, "FY_next", SWITCH([FY_adj], "FY18", "FY19", "FY19", "FY20", "FY20", "TTM21", "#NA")
+, "FY_last", SWITCH([FY_adj], "FY19", "FY18", "FY20", "FY19", "TTM21", "FY10", "#NA")
+, "type", if([FY_adj]="TTM21", "8m", "12m")
+)
+
+return g2
+
+
+
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+
