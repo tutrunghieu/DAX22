@@ -1,0 +1,382 @@
+
+//-------------------------------------------------------------------
+B1_growth = 
+
+var g1 = GROUPBY(t2_augmented, [product group]
+, "rev18", sumx(CURRENTGROUP(), if([FY_adj]="FY18", 1, 0)*[amt])
+, "rev19", sumx(CURRENTGROUP(), if([FY_adj]="FY19", 1, 0)*[amt])
+, "rev20", sumx(CURRENTGROUP(), if([FY_adj]="FY20", 1, 0)*[amt])
+, "rev21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt])
+)
+
+var g2 = ADDCOLUMNS(g1
+, "GR19", DIVIDE([rev19]-[rev18], [rev18])
+, "GR20", DIVIDE([rev20]-[rev19], [rev19])
+, "GR21", DIVIDE([rev21]-[rev20], [rev20])
+, "CT18", [rev18]/sumx(g1, [rev18])
+, "CT19", [rev19]/sumx(g1, [rev19])
+, "CT20", [rev20]/sumx(g1, [rev20])
+, "CT21", [rev21]/sumx(g1, [rev21])
+)
+
+return g2
+
+
+//-------------------------------------------------------------------
+B1_growth_region = 
+
+var g1 = GROUPBY(t2_augmented, [region]
+, "rev18", sumx(CURRENTGROUP(), if([FY_adj]="FY18", 1, 0)*[amt])
+, "rev19", sumx(CURRENTGROUP(), if([FY_adj]="FY19", 1, 0)*[amt])
+, "rev20", sumx(CURRENTGROUP(), if([FY_adj]="FY20", 1, 0)*[amt])
+, "rev21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt])
+)
+
+var g2 = ADDCOLUMNS(g1
+, "GR19", DIVIDE([rev19]-[rev18], [rev18])
+, "GR20", DIVIDE([rev20]-[rev19], [rev19])
+, "GR21", DIVIDE([rev21]-[rev20], [rev20])
+, "CT18", [rev18]/sumx(g1, [rev18])
+, "CT19", [rev19]/sumx(g1, [rev19])
+, "CT20", [rev20]/sumx(g1, [rev20])
+, "CT21", [rev21]/sumx(g1, [rev21])
+)
+
+return g2
+
+//-------------------------------------------------------------------
+B1_growth_all = 
+
+var t1 = ADDCOLUMNS(t2_augmented, "all", "(grand total)")
+
+var g1 = GROUPBY(t1, [all]
+, "rev18", sumx(CURRENTGROUP(), if([FY_adj]="FY18", 1, 0)*[amt])
+, "rev19", sumx(CURRENTGROUP(), if([FY_adj]="FY19", 1, 0)*[amt])
+, "rev20", sumx(CURRENTGROUP(), if([FY_adj]="FY20", 1, 0)*[amt])
+, "rev21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt])
+)
+
+var g2 = ADDCOLUMNS(g1
+, "GR19", DIVIDE([rev19]-[rev18], [rev18])
+, "GR20", DIVIDE([rev20]-[rev19], [rev19])
+, "GR21", DIVIDE([rev21]-[rev20], [rev20])
+, "CT18", [rev18]/sumx(g1, [rev18])
+, "CT19", [rev19]/sumx(g1, [rev19])
+, "CT20", [rev20]/sumx(g1, [rev20])
+, "CT21", [rev21]/sumx(g1, [rev21])
+)
+
+return g2
+
+
+//-------------------------------------------------------------------
+B2_flat = 
+
+var t1 = UNION(row("name", "rev"), row("name", "price"), row("name", "vol"))
+var t2 = GROUPBY(t2_augmented, [FY_adj])
+
+var p1 = GENERATEALL(t1, t2)
+var p2 = ADDCOLUMNS(p1, "val", SWITCH([name], "rev", 111, "price", 222, "vol", 333))
+
+var p3 = ADDCOLUMNS(p1
+, "val", SWITCH([name]
+, "rev", (var y1=[FY_adj] var t1=FILTER(t2_augmented, [FY_adj]=y1) return sumx(t1, [amt]) )
+, "price", (var y1=[FY_adj] var t1=FILTER(t2_augmented, [FY_adj]=y1) return averagex(t1, [price]) )
+, "vol", (var y1=[FY_adj] var t1=FILTER(t2_augmented, [FY_adj]=y1) return sumx(t1, [vol]) )
+, BLANK())
+)
+
+return p3
+
+
+//-------------------------------------------------------------------
+B2_flat_dual = 
+
+var t1 = UNION(row("name", "rev"), row("name", "price"), row("name", "vol"))
+
+var part1 = (
+var t2 = GROUPBY(selectcolumns(t2_augmented, "time", [FY_adj]), [time])
+var p2 = ADDCOLUMNS(GENERATEALL(t1, t2)
+
+, "val", (
+    var curset = (var y1=[time] var set1=FILTER(t2_augmented, [FY_adj]=y1) return set1)
+    var sw1 = SWITCH([name], "rev", sumx(curset, [amt])
+       , "price", averagex(curset, [price]), "vol", sumx(curset, [vol]), BLANK())
+    return sw1)
+
+, "scale", "yearly"
+)
+
+return p2)
+
+var part2 = (
+var t2 = GROUPBY(selectcolumns(t2_augmented, "time", [time_ym]), [time])
+var p2 = ADDCOLUMNS(GENERATEALL(t1, t2)
+
+, "val", (
+    var curset = (var y1=[time] var set1=FILTER(t2_augmented, [time_ym]=y1) return set1)
+    var sw1 = SWITCH([name], "rev", sumx(curset, [amt])
+       , "price", averagex(curset, [price]), "vol", sumx(curset, [vol]), BLANK())
+    return sw1)
+
+, "scale", "monthly"
+) 
+
+return p2)
+
+return UNION(part1, part2)
+
+
+//-------------------------------------------------------------------
+B2_flat_growth = 
+
+var base0 = ADDCOLUMNS(t2_augmented, "group", "(all)")
+var t1 = UNION(row("name", "rev"), row("name", "GR"), row("name", "CT"))
+var t2 = GROUPBY(base0, [FY_adj], [FY_last], [group])
+
+var p1 = GENERATEALL(t1, t2)
+var p2 = ADDCOLUMNS(p1
+
+, "val", (
+var curset = (var abc = [group] var set1 = FILTER(base0, [group]=abc) return set1)  
+var curVal = (var abc = [FY_adj] var set1 = sumx(FILTER(curset, [FY_adj]=abc), [amt]) return set1)
+var lastVal = (var abc=[FY_last] var set1 = sumx(FILTER(curset, [FY_adj]=abc), [amt]) return set1)
+var footVal = (var abc=[FY_adj] var set1 = sumx(FILTER(base0, [FY_adj]=abc), [amt]) return set1)
+var sw1 = SWITCH([name], "rev", curVal, "GR", DIVIDE(curVal-lastVal, lastVal), "CT", DIVIDE(curVal, footVal), BLANK()) 
+return sw1)
+
+)
+
+return p2
+
+//-------------------------------------------------------------------
+B3_PVM = 
+
+var t1 = GROUPBY(t2_augmented, [FY_adj], [FY_next])
+var t2 = UNION(row("name", "price"), row("name", "vol"), row("name", "mix"))
+
+var p1 = addcolumns(GENERATEALL(t1, t2), "type", "small")
+var p2 = ADDCOLUMNS(t1, "name", "", "type", "big")
+
+var u1 = union(filter(p1, [FY_adj] <> "TTM21"), p2)
+
+var u2 = ADDCOLUMNS(u1
+, "val", SWITCH([type]
+    , "big", (var y1=[FY_adj] var set1=filter(t2_augmented, [FY_adj]=y1) 
+            return sumx(set1, [amt]) )
+
+    , "small", (var y1=[FY_adj] var y2=[FY_next] 
+            var set1 =filter(t2_augmented, [FY_adj]=y1) 
+            var set2 = filter(t2_augmented, [FY_adj]=y2)
+
+            //BEGIN: different formulas in different projects 
+            var a1 = sumx(set1, [amt]) var v1 = sumx(set1, [vol]) var p1 = a1/v1
+            var a2 = sumx(set2, [amt]) var v2 = sumx(set2, [vol]) var p2 = a2/v2
+            var dp = (p2 - p1)*v1 var dv = (v2 - v1)*p1 var dm = a2-a1-dp-dv
+            var diff = SWITCH([name], "price", dp, "vol", dv, "mix", dm)
+            //END: different formulas in different projects 
+
+            return diff)
+    , BLANK())
+
+, "FY name", [FY_adj] & " " & [name]
+)
+return u2
+
+
+//-------------------------------------------------------------------
+B4_TTM = 
+
+var b1 = ADDCOLUMNS(t1_imported
+, "amt", [price]*[vol]
+, "time_y", FORMAT([Invoice date], "yyyy")
+, "time_ym", FORMAT([Invoice date], "yyyy-MM")
+, "time_yq", FORMAT([Invoice date], "yyyy-\QQ")
+)
+
+var ttm = (
+var part1 = ADDCOLUMNS(b1, "FY_adj", if([FY]="FY21", "TTM21", [FY]), "source", "original") 
+var part2 = ADDCOLUMNS(filter(b1, and([FY]="FY20", [time_ym]>="2020-09") ), "FY_adj", "TTM21", "source", "l4m20") 
+return UNION(part1, part2) )
+ 
+return ttm
+
+
+//-------------------------------------------------------------------
+B4_TTO = 
+
+var u_regions = (
+   var g1 = GROUPBY(B4_TTM, [region], "a21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt]) )
+   var g2 = ADDCOLUMNS(g1, "rank21", rankx(g1, [a21]) )
+   return g2)
+
+var tto1 = GENERATEALL(B4_TTM, (
+    var tt1 = maxx(row("abcd", [region]), [abcd])
+    var set1 = FILTER(u_regions, [region] = tt1) 
+    var set2 = SELECTCOLUMNS(set1, "region rank", [rank21])
+    return set2))
+
+return tto1
+
+
+//-------------------------------------------------------------------
+B4_TTO_dual = 
+
+var part1 = (
+var base0 = B4_TTM
+var voc1 = (
+   var g1 = GROUPBY(base0, [region], "a21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt]) )
+   var g2 = ADDCOLUMNS(g1, "rank21", rankx(g1, [a21]) )
+   return g2)
+
+var tto = GENERATEALL(base0, (
+    var tt1 = [region]
+    var set1 = FILTER(voc1, [region] = tt1) 
+    var set2 = SELECTCOLUMNS(set1, "region rank", [rank21])
+    return set2))
+return tto)    
+
+var part2 = (
+var base0 = part1
+var voc1 = (
+   var g1 = GROUPBY(base0, [product group], "a21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt]) )
+   var g2 = ADDCOLUMNS(g1, "rank21", rankx(g1, [a21]) )
+   return g2)
+
+var tto = GENERATEALL(base0, (
+    var tt1 = [product group]
+    var set1 = FILTER(voc1, [product group] = tt1) 
+    var set2 = SELECTCOLUMNS(set1, "product rank", [rank21])
+    return set2))
+return tto)    
+
+return part2
+
+
+
+//-------------------------------------------------------------------
+B5_LGR = 
+
+var g1 = GROUPBY(t2_augmented, [FY_adj])
+
+var g2 = GENERATEALL(g1, (
+    var s1 = [FY_adj]
+    var set1 = FILTER(t2_augmented, [FY_adj]=s1)
+    var set2 = GROUPBY(set1, [product group], "amt", SUMX(CURRENTGROUP(), [amt]))
+    var set3 = ADDCOLUMNS(set2, "rank", RANKX(set2, [amt]))
+    var set4 = ADDCOLUMNS(set3, "rank full", [FY_adj] & "/" & [rank])
+    return set4))
+
+return g2
+
+
+//-------------------------------------------------------------------
+B5_LGR_combined = 
+
+var t1 = ADDCOLUMNS(t2_augmented, "FY_region", [FY] & "/" & [region])
+
+var g1 = GROUPBY(t1, [FY_region], [FY_adj], [region])
+
+var g2 = GENERATEALL(g1, (
+    var s1 = [FY_region]
+    var set1 = FILTER(t2_augmented, [FY_region]=s1)
+    var set2 = GROUPBY(set1, [product group], "amt", SUMX(CURRENTGROUP(), [amt]))
+    var set3 = ADDCOLUMNS(set2, "rank", RANKX(set2, [amt]))
+    var set4 = ADDCOLUMNS(set3, "rank full", [region] & "/" & [FY_adj] & "/" & [rank])
+    return set4))
+
+return g2
+//-------------------------------------------------------------------
+B5_LGR_hist = 
+
+var t1 = ADDCOLUMNS(t2_augmented, "group", [FY_adj] & "/" & [source])
+
+var g1 = GROUPBY(t1, [group])
+
+var g2 = GENERATEALL(g1, (
+    var curset = (var y1=[group] return FILTER(t1, [group]=y1) )
+    var u1 = DISTINCT(SELECTCOLUMNS(curset, "abcd", [time_ym]))
+    return ROW("months", COUNTAX(u1, [abcd]), "m1", minx(u1, [abcd]), "m2", maxx(u1, [abcd]) )
+))
+
+return g2
+
+
+//-------------------------------------------------------------------
+B5_LGR_items = 
+
+var t1 = ADDCOLUMNS(t2_augmented, "group", [FY_adj])
+
+var g1 = GROUPBY(t1, [group]
+, "rev", sumx(CURRENTGROUP(), [amt])
+, "price", AVERAGEX(CURRENTGROUP(), [price])
+, "vol", sumx(CURRENTGROUP(), [amt])
+)
+
+var g2 = GENERATEALL(g1, (
+    var curset = (var y1=[group] return FILTER(t1, [group]=y1) )
+    var u1 = DISTINCT(SELECTCOLUMNS(curset, "abcd", [time_ym]))
+    var u2 = DISTINCT(SELECTCOLUMNS(curset, "abcd", [region]))
+    var u3 = DISTINCT(SELECTCOLUMNS(curset, "abcd", [product group]))
+    return ROW("months", COUNTAX(u1, [abcd]), "regions", COUNTAX(u2, [abcd]), "products", COUNTAX(u3, [abcd]) )
+))
+
+return g2
+
+
+
+//-------------------------------------------------------------------
+B6_temporal = 
+var t1 = ROW("name", "Alice", "start", 2003, "end", 2007, "rev", 7, "disc", 0.3)
+var t2 = ROW("name", "Cody", "start", 2006, "end", 2008, "rev", 4, "disc", 0.2)
+var t3 = ROW("name", "David", "start", 2004, "end", 2007, "rev", 6, "disc", 0.45)
+var u1 = UNION(t1, t2, t3)
+
+var u2 = GENERATEALL(u1, (var s1=GENERATESERIES([start], [end], 1) var s2=SELECTCOLUMNS(s1, "active", [Value]) return s2)) 
+var u3 = ADDCOLUMNS(u2, "rev adis", if([active]=[start], 1-[disc], 1)*[rev])
+
+return u3
+
+//-------------------------------------------------------------------
+B7_pareto = 
+
+var t1 = SELECTCOLUMNS(t2_augmented, "Par_split", [region AB], "Par_tile", [FY_adj], "Par_amt", [amt])
+var g1 = GROUPBY(t1, [Par_split], [Par_tile]
+, "Par_amt", SUMX(CURRENTGROUP(), [Par_amt])
+)
+
+return g1
+
+
+//-------------------------------------------------------------------
+B7_pareto_duo = 
+
+var part1 = (
+var t1 = SELECTCOLUMNS(t2_augmented, "Par_split", [region AB], "Par_tile", [FY_adj], "Par_amt", [amt], "Par_page", "region")
+var g1 = GROUPBY(t1, [Par_split], [Par_tile], [Par_page]
+, "Par_amt", SUMX(CURRENTGROUP(), [Par_amt])
+)
+
+return g1)
+
+var part2 = (
+var t1 = SELECTCOLUMNS(t2_augmented, "Par_split", [product AB], "Par_tile", [FY_adj], "Par_amt", [amt], "Par_page", "product")
+var g1 = GROUPBY(t1, [Par_split], [Par_tile], [Par_page]
+, "Par_amt", SUMX(CURRENTGROUP(), [Par_amt])
+)
+
+return g1)
+
+return ADDCOLUMNS(union(part1, part2), "Par_lrx", [Par_page] & " " & [Par_tile])
+
+
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+
