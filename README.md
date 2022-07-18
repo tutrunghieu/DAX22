@@ -1,11 +1,11 @@
 # To share materials on DAX
 
-## DAX
+## DAX queries for financial workers
 
-1. [DAX big queries](https://en.wikipedia.org/wiki/Language) 
-2. [DAX small queries](https://en.wikipedia.org/wiki/Language)
+1. [DAX big queries](https://raw.githubusercontent.com/tutrunghieu/DAX22/main/DAX-big.txt) 
+2. [DAX small queries](https://raw.githubusercontent.com/tutrunghieu/DAX22/main/DAX-small.txt)
 
-## Simulations
+## Simulated data to test DAX queries
 
 1. [POS data from STGD Asia Pte Ltd](https://en.wikipedia.org/wiki/Language) 
 2. [POS data from OPCL Asia Pte Ltd](https://en.wikipedia.org/wiki/Language) 
