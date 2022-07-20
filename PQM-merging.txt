@@ -1,0 +1,27 @@
+//----------------------------- Get Data >> Blank Query >> Advanced Editor >> Rename t1_merged
+let 
+
+ReadOneTable = (part) => ( let
+    Source = Excel.Workbook(File.Contents("C:\Users\CT952KF\Desktop\JP DAX training 2022m07d18\01-VDR\POS-data-folder\2022m07d14-" & part & ".xlsx"), null, true),
+    Sheet1_Sheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(Sheet1_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"region", type text}, {"product group", type text}, {"product name", type text}, {"Invoice ID", type text}, {"Invoice date", type date}, {"FY", type text}, {"vol", Int64.Type}, {"price", Int64.Type}})
+in 
+   #"Changed Type" ),
+
+   #"t1" = ReadOneTable("ID-2018"),
+   #"t2" = ReadOneTable("ID-2019"),
+   #"t3" = ReadOneTable("ID-2020"),
+   #"t4" = ReadOneTable("ID-2021"),
+   #"s1" = ReadOneTable("SG-2018"),
+   #"s2" = ReadOneTable("SG-2019"),
+   #"s3" = ReadOneTable("SG-2020"),
+   #"s4" = ReadOneTable("SG-2021"),
+   #"m1" = ReadOneTable("ML-2018"),
+   #"m2" = ReadOneTable("ML-2019"),
+   #"m3" = ReadOneTable("ML-2020"),
+   #"m4" = ReadOneTable("ML-2021"),
+   
+   #"Merged" = Table.Combine({ #"t1", #"t2", #"t3", #"t4", #"s1", #"s2", #"s3", #"s4", #"m1", #"m2", #"m3", #"m4" })
+in  
+   #"Merged"
