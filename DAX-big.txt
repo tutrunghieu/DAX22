@@ -1,3 +1,64 @@
+//------------------------------------------------------------------- Get Data >> Blank Query >> Advanced Editor >> Rename table to t1_imported
+let
+    Source = Excel.Workbook(File.Contents("C:\<Full-path-to-your-file>\POS data ID-ML-SG Jun22.xlsx"), null, true),
+    Data_Sheet = Source{[Item="Data",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(Data_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"region", type text}, {"product group", type text}, {"product name", type text}, {"Invoice ID", type text}, {"Invoice date", type date}, {"FY", type text}, {"vol", Int64.Type}, {"price", Int64.Type}})
+in
+    #"Changed Type"
+    
+//-------------------------------------------------------------------
+t2_augmented = 
+
+var b1 = ADDCOLUMNS(t1_imported
+, "amt", [price]*[vol]
+, "time_y", FORMAT([Invoice date], "yyyy")
+, "time_ym", FORMAT([Invoice date], "yyyy-MM")
+, "time_yq", FORMAT([Invoice date], "yyyy-\QQ")
+)
+
+var ttm = (
+   var part1 = ADDCOLUMNS(b1, "FY_adj", if([FY]="FY21", "TTM21", [FY]), "source", "original") 
+   var part2 = ADDCOLUMNS(filter(b1, and([FY]="FY20", [time_ym]>="2020-09") ), "FY_adj", "TTM21", "source", "l4m20") 
+   var u1 = UNION(part1, part2)
+   return u1)
+
+var u_regions = (
+   var g1 = GROUPBY(ttm, [region], "a21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt]) )
+   var g2 = ADDCOLUMNS(g1, "rank21", rankx(g1, [a21]) )
+   return g2)
+
+var tto1 = GENERATEALL(ttm, (
+    var tt1 = maxx(row("abcd", [region]), [abcd])
+    var set1 = FILTER(u_regions, [region] = tt1) 
+    var set2 = SELECTCOLUMNS(set1, "region rank", [rank21])
+    return set2))
+
+var u_products = (
+   var g1 = GROUPBY(ttm, [product group], "a21", sumx(CURRENTGROUP(), if([FY_adj]="TTM21", 1, 0)*[amt]) )
+   var g2 = ADDCOLUMNS(g1, "rank21", rankx(g1, [a21]) )
+   return g2)
+
+var tto2 = GENERATEALL(tto1, (
+    var tt1 = maxx(row("abcd", [product group]), [abcd])
+    var set1 = FILTER(u_products, [product group] = tt1) 
+    var set2 = SELECTCOLUMNS(set1, "product rank", [rank21])
+    return set2))
+
+var top_regions = 5 
+var top_products = 3
+
+var final = ADDCOLUMNS(tto2
+, "FY_next", SWITCH([FY_adj], "FY18", "FY19", "FY19", "FY20", "FY20", "TTM21", "NA")
+, "FY_last", SWITCH([FY_adj], "FY18", "NA", "FY19", "FY18", "FY20", "FY19", "TTM21", "FY20", "")
+, "region TTO", if([region rank]<=top_regions, FORMAT([region rank], "00 ") & [region], "Others")    
+, "product TTO", if([product rank]<=top_products, FORMAT([product rank], "00 ") & [product group], "Others")    
+, "region AB", if([region rank]<=top_regions, "A-regions", "B-regions")    
+, "product AB", if([product rank]<=top_products, "A-products", "B-products")    
+)
+
+return final
+
 
 //-------------------------------------------------------------------
 B1_growth = 
