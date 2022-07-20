@@ -1,0 +1,18 @@
+//-------------------- t1_contractual
+let
+    Source = Excel.Workbook(File.Contents("<full-path>\2022m07d10-B1-contractual.xlsx"), null, true),
+    Sheet1_Sheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(Sheet1_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"country", type text}, {"region", type text}, {"DOP", type text}, {"Unit ID", type text}, {"Unit size sqft", type number}, {"Unit location", type text}, {"Unit floor", type number}, {"Unit size XXL", type text}, {"Unit Type GSP", type text}, {"Unit price SGD", type number}, {"Tenant ID", type text}, {"Tenant BBC", type text}, {"Contract ID", type text}, {"lease start", type text}, {"lease end", type text}, {"monthly rent", type number}, {"lease start next", type text}, {"Contract ID next", type text}, {"LOS", type number}, {"LOD", type number}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each [country] <> "abcd")
+in
+    #"Filtered Rows"
+    
+//-------------------- t2_temporal
+let
+    Source = Csv.Document(File.Contents("<full-path>\2022m07d10-B2-temporal.csv"),[Delimiter=",", Columns=21, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"country", type text}, {"region", type text}, {"DOP", type text}, {"Unit ID", type text}, {"Unit size sqft", type number}, {"Unit price SGD", type number}, {"Unit location", type text}, {"Unit floor", type number}, {"Unit size XXL", type text}, {"Unit Type GSP", type text}, {"Tenant ID", type text}, {"Tenant BBC", type text}, {"Contract ID", type text}, {"lease start", type text}, {"lease end", type text}, {"monthly rent", type number}, {"LOS", type number}, {"LOD", type number}, {"time_ym", type text}, {"time_age", type number}, {"occupied", type number}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each [country] <> "abcd")
+in
+    #"Filtered Rows"    
