@@ -16,6 +16,38 @@ let
     #"Filtered Rows" = Table.SelectRows(#"Changed Type", each [country] <> "abcd")
 in
     #"Filtered Rows"    
+    
+//-------------------- monthly lettable units (rental capacity)
+//you can use the DOP of each unit / facility to imply the rental capacity
+//then you can check the capacity against the occupancy numbers
+monthly_lettable = 
+
+var hp1 = selectcolumns(
+    GROUPBY(x2_temporal, [time_y], [time_ym7])
+    , "time_y", [time_y], "time_ym", [time_ym7])
+
+var g1 = GROUPBY(
+    SELECTCOLUMNS(x1_contractual, "unit ID", [Unit ID], "unit DOP", [DOP], "unit size", [Unit size sqft])
+    , [Unit ID], [unit DOP], [unit size])
+
+var g2 = GENERATEALL(hp1, (
+    var ym1 = [time_ym]
+    var curset = GROUPBY(FILTER(g1, left([unit DOP], 7)=ym1), [Unit ID], [Unit size])
+    var c1 = COUNTAX(curset, [Unit ID])
+    var s1 = sumx(curset, [Unit size])
+    var row1 = row("added units", c1, "added area", s1) 
+    return row1))
+
+var g3 = GENERATEALL(g2, (
+    var ym1 = [time_ym]
+    var curset = FILTER(g2, [time_ym] <= ym1)
+    var u1 = sumx(curset, [added units])
+    var a1 = sumx(curset, [added area])
+    var row1 = row("lettable units", u1, "lettable area", a1)
+    return row1))
+
+return g3
+    
 
 //-------------------- computing WALE and ALE
 A1_WALE_basis = 
