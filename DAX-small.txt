@@ -71,14 +71,14 @@ return s2
 //-------------------------------------------------------------------
 A2_merging_year_name = 
 
-var t1 = selectcolumns(GENERATESERIES(2018, 2021, 1), "year", [Value])
+var t0 = GENERATESERIES(2018, 2022, 1)
+var t1 = selectcolumns(t0, "year", [Value], "year_next", [Value]+1, "year_prev", [Value]-1)
 
 var c1 = ADDCOLUMNS(t1, "name", "rev")
 var c2 = ADDCOLUMNS(t1, "name", "price")
 var c3 = ADDCOLUMNS(t1, "name", "vol")
 
 return UNION(c1, c2, c3)
-
 
 
 //-------------------------------------------------------------------
