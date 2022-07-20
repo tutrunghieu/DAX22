@@ -128,7 +128,26 @@ var s1 = COUNTAX(DISTINCT(SELECTCOLUMNS(set1, "abcd", [MIMO_contract])), [abcd])
 return s1
 
 
-//--------------------
+//-------------------- joining time from different source to form the monthly axis
+monthly_hp = 
+
+var g1 = selectcolumns(GROUPBY(x1_contractual, [DOP]), "time_ym", left([DOP], 7), "source", "DOP")
+var g2 = selectcolumns(GROUPBY(x1_contractual, [lease start]), "time_ym", left([lease start], 7), "source", "lease start")
+var g3 = selectcolumns(GROUPBY(x1_contractual, [lease end]), "time_ym", left([lease end], 7), "source", "lease end")
+var g4 = selectcolumns(GROUPBY(x2_temporal, [time_ym]), "time_ym", left([time_ym], 7), "source", "temporal")
+var u1 = UNION(g1, g2, g3, g4)
+
+var u2 = GROUPBY(u1, [time_ym]
+, "DOP", sumx(CURRENTGROUP(), if([source]="DOP", 1, 0))
+, "LS", sumx(CURRENTGROUP(), if([source]="lease start", 1, 0))
+, "LE", sumx(CURRENTGROUP(), if([source]="lease end", 1, 0))
+, "TEMP", sumx(CURRENTGROUP(), if([source]="temporal", 1, 0))
+)
+
+return u2
+
+
+
 //--------------------
 //--------------------
 //--------------------
