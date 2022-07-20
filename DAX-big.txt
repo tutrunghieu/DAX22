@@ -61,6 +61,7 @@ return final
 
 
 //-------------------------------------------------------------------
+//we compute the year-to-year first in g1 and we add GR columns and CT columns in g2
 B1_growth = 
 
 var g1 = GROUPBY(t2_augmented, [product group]
@@ -211,6 +212,7 @@ return sw1)
 return p2
 
 //-------------------------------------------------------------------
+//we build the skeleton of the bridge in u1 and we add value column in u2 with two switching expression
 B3_PVM = 
 
 var t1 = GROUPBY(t2_augmented, [FY_adj], [FY_next])
@@ -264,6 +266,7 @@ return ttm
 
 
 //-------------------------------------------------------------------
+//we rank items in u_regions and we merge those ranking values in tto1
 B4_TTO = 
 
 var u_regions = (
