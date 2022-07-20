@@ -16,3 +16,53 @@ let
     #"Filtered Rows" = Table.SelectRows(#"Changed Type", each [country] <> "abcd")
 in
     #"Filtered Rows"    
+
+//-------------------- computing WALE and ALE
+A1_WALE_basis = 
+
+var wale_date = DATEVALUE("2022-03-31")
+
+var g0 = SELECTCOLUMNS(FILTER(x1_contractual, DATEVALUE([lease end]) > wale_date)
+, "WALE_start", wale_date
+, "WALE_months", DATEDIFF(wale_date, DATEVALUE([lease end]), MONTH) 
+, "WALE_area", [Unit size sqft]
+, "WALE_contract", [Contract ID] 
+, "split_region", [region] 
+, "split_batch", [lease_start_y]  
+, "split_tenant", [Tenant BBC] 
+)
+
+return g0
+
+//-------------------- computing WALE and ALE
+measure_ALE = AVERAGEX(A1_WALE_basis, [WALE_months])
+measure_WALE = sumx(A1_WALE_basis, [WALE_area]*[WALE_months]) / sumx(A1_WALE_basis, [WALE_area])
+measure_WALE_contracts = COUNTAX(GROUPBY(A1_WALE_basis, [WALE_contract]), [WALE_contract])
+
+
+//-------------------- computing LOS and WALOS
+A2_LOS_basis = 
+
+var g1 = SELECTCOLUMNS(x1_contractual
+, "LOS_months", [LOS]
+, "LOS_weight", [Unit size sqft]
+, "LOS_contract", [Contract ID]
+, "split_tenant", [Tenant BBC]
+, "split_region", [region]
+, "split_cohort", [lease_start_ym]
+, "split_batch", [lease_start_y]
+)
+
+return g1
+
+//-------------------- adding measures for LOS
+measure_ALOS = AVERAGEX(A2_LOS_basis, [LOS_months])
+measure_WALOS = sumx(A2_LOS_basis, [LOS_months]*[LOS_weight]) / sumx(A2_LOS_basis, [LOS_weight]) 
+measure_LOS_contracts = COUNTAX(GROUPBY(A2_LOS_basis, [LOS_contract]), [LOS_contract])
+
+
+//--------------------
+//--------------------
+//--------------------
+//--------------------
+//--------------------
