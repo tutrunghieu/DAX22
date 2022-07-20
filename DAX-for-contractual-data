@@ -62,7 +62,46 @@ measure_LOS_contracts = COUNTAX(GROUPBY(A2_LOS_basis, [LOS_contract]), [LOS_cont
 
 
 //--------------------
+A3_MIMO_basis = 
+
+var g1 = SELECTCOLUMNS(x1_contractual
+, "time_ymd", [lease_end_ym]
+, "split_name", "leaving"
+, "MIMO_contract", [Contract ID]
+, "split_region", [region]
+, "split_tenant", [Tenant BBC]
+)
+
+var g2 = SELECTCOLUMNS(x1_contractual
+, "time_ymd", [lease_start_ym]
+, "split_name", "joining"
+, "MIMO_contract", [Contract ID]
+, "split_region", [region]
+, "split_tenant", [Tenant BBC]
+)
+
+var u1 = ADDCOLUMNS(UNION(g1, g2)
+, "time_y", LEFT([time_ymd], 4)
+, "time_yq", FORMAT( DATEVALUE([time_ymd]), "yyyy-\QQ") 
+)
+
+return filter(u1, [time_y]<="2021")
+
+
+//-------------------- measuring MIMO rates
+measure_MIMO_contracts = 
+var p1 = SELECTEDVALUE(A3_MIMO_basis[split_name])
+var set1 = FILTER(A3_MIMO_basis, [split_name]=p1)
+var s1 = COUNTAX(DISTINCT(SELECTCOLUMNS(set1, "abcd", [MIMO_contract])), [abcd])
+return s1
+
+
 //--------------------
 //--------------------
 //--------------------
 //--------------------
+//--------------------
+//--------------------
+//--------------------
+//--------------------
+
