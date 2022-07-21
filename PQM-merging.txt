@@ -2,7 +2,7 @@
 let 
 
 ReadOneTable = (part) => ( let
-    Source = Excel.Workbook(File.Contents("C:\Users\CT952KF\Desktop\JP DAX training 2022m07d18\01-VDR\POS-data-folder\2022m07d14-" & part & ".xlsx"), null, true),
+    Source = Excel.Workbook(File.Contents("<full-path-to-folder>\POS-data-folder\2022m07d14-" & part & ".xlsx"), null, true),
     Sheet1_Sheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
     #"Promoted Headers" = Table.PromoteHeaders(Sheet1_Sheet, [PromoteAllScalars=true]),
     #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"region", type text}, {"product group", type text}, {"product name", type text}, {"Invoice ID", type text}, {"Invoice date", type date}, {"FY", type text}, {"vol", Int64.Type}, {"price", Int64.Type}})
